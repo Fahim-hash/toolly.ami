@@ -2,9 +2,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Upload, Download, Settings2, ShieldCheck, 
-  Type, ImageIcon, Trash2, RefreshCcw, Layers, Zip 
+  Type, ImageIcon, Trash2, RefreshCcw, Layers, Archive 
 } from 'lucide-react';
-import JSZip from 'jszip'; // Make sure to install: npm install jszip
+import JSZip from 'jszip'; 
 
 interface BulkImage {
   id: string;
@@ -31,7 +31,6 @@ export default function WatermarkTool() {
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Core Watermarking Logic (Reusable for Bulk)
   const applyWatermark = async (imageUrl: string): Promise<string> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
@@ -76,8 +75,7 @@ export default function WatermarkTool() {
 
         } else if (mode === 'image' && logoBlack && logoWhite) {
           const lImg = new window.Image();
-          // Contrast logic for image mode can be simplified or pre-calculated
-          lImg.src = logoWhite; // Defaulting to white for preview, real logic uses threshold
+          lImg.src = logoWhite; 
 
           lImg.onload = () => {
             const targetW = canvas.width * (config.scale / 100);
@@ -115,93 +113,110 @@ export default function WatermarkTool() {
 
   const downloadAll = async () => {
     setIsProcessing(true);
-    const zip = new JSZip();
-    
-    for (const img of images) {
-      const processedData = await applyWatermark(img.url);
-      const base64Data = processedData.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
-      zip.file(`toolly-${img.name}`, base64Data, {base64: true});
+    try {
+      const zip = new JSZip();
+      for (const img of images) {
+        const processedData = await applyWatermark(img.url);
+        const base64Data = processedData.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+        zip.file(`toolly-${img.name}`, base64Data, {base64: true});
+      }
+      const content = await zip.generateAsync({type: "blob"});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = "toolly-bulk-branded.zip";
+      link.click();
+    } catch (err) {
+      console.error("Bulk Download Error:", err);
+    } finally {
+      setIsProcessing(false);
     }
-
-    const content = await zip.generateAsync({type: "blob"});
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(content);
-    link.download = "toolly-bulk-branded.zip";
-    link.click();
-    setIsProcessing(false);
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-10 px-6">
+    <div className="max-w-7xl mx-auto py-10 px-6 min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <div className="flex items-center gap-3">
-            <Layers className="text-blue-600" size={32} />
-            <h1 className="text-3xl font-black italic uppercase tracking-tight text-white">
-            Toolly <span className="text-blue-600">Bulk Mark</span>
-            </h1>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-4 border-b border-zinc-900 pb-8">
+        <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-600/10 rounded-2xl">
+              <Layers className="text-blue-500" size={32} />
+            </div>
+            <div>
+              <h1 className="text-4xl font-black italic uppercase tracking-tighter">
+              Toolly <span className="text-blue-600">Bulk Mark</span>
+              </h1>
+              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">HSC-26 Batch Processor</p>
+            </div>
         </div>
         <div className="flex gap-3">
             {images.length > 0 && (
-                <button onClick={() => setImages([])} className="p-3 bg-zinc-900 text-zinc-500 rounded-2xl hover:text-red-500 transition-all">
+                <button onClick={() => setImages([])} className="p-4 bg-zinc-900 text-zinc-500 rounded-2xl hover:text-red-500 transition-all border border-zinc-800">
                     <Trash2 size={20} />
                 </button>
             )}
-            <button 
+            <button 
                 disabled={images.length === 0 || isProcessing}
                 onClick={downloadAll}
-                className="px-8 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-500 transition-all shadow-lg disabled:opacity-50"
+                className="px-8 py-4 bg-blue-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-600/20 disabled:opacity-30 flex items-center gap-3"
             >
-                {isProcessing ? <RefreshCcw size={20} className="animate-spin" /> : <Download size={20} className="inline mr-2" />} 
+                {isProcessing ? <RefreshCcw size={18} className="animate-spin" /> : <Archive size={18} />} 
                 {isProcessing ? 'Processing...' : `Export ZIP (${images.length})`}
             </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Sidebar */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-[2rem] p-6 space-y-6">
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-[2.5rem] p-8 space-y-8 backdrop-blur-md">
             
             {/* Mode Toggle */}
-            <div className="flex p-1 bg-black rounded-xl border border-zinc-800">
-              <button onClick={() => setMode('text')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${mode === 'text' ? 'bg-zinc-800 text-white' : 'text-zinc-500'}`}><Type size={14} /> Text</button>
-              <button onClick={() => setMode('image')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${mode === 'image' ? 'bg-zinc-800 text-white' : 'text-zinc-500'}`}><ImageIcon size={14} /> Logo</button>
+            <div className="flex p-1.5 bg-black/50 rounded-2xl border border-zinc-800">
+              <button onClick={() => setMode('text')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2 ${mode === 'text' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:text-zinc-400'}`}><Type size={14} /> Text</button>
+              <button onClick={() => setMode('image')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2 ${mode === 'image' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:text-zinc-400'}`}><ImageIcon size={14} /> Logo</button>
             </div>
 
             {mode === 'text' ? (
               <div className="space-y-4">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase italic">Watermark Text</label>
-                <input type="text" value={config.text} onChange={(e) => setConfig({...config, text: e.target.value})} className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm focus:border-blue-600 outline-none" />
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Watermark Label</label>
+                <input type="text" value={config.text} onChange={(e) => setConfig({...config, text: e.target.value})} className="w-full bg-black/50 border border-zinc-800 rounded-2xl p-4 text-sm font-medium focus:border-blue-600 outline-none transition-colors" placeholder="e.g. Property of Toolly" />
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative h-20 border border-dashed border-zinc-800 rounded-xl flex items-center justify-center hover:bg-zinc-800/20 transition cursor-pointer">
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
+              <div className="grid grid-cols-2 gap-4">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-blue-600/5 rounded-2xl border border-dashed border-zinc-800 group-hover:border-blue-600/50 transition-colors" />
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if(file) setLogoBlack(URL.createObjectURL(file));
                   }} />
-                  <span className="text-[10px] font-bold text-zinc-500">BLACK</span>
+                  <div className="h-24 flex flex-col items-center justify-center gap-2 relative pointer-events-none">
+                    <span className="text-[9px] font-black text-zinc-500 group-hover:text-white transition-colors uppercase italic">Logo Black</span>
+                  </div>
                 </div>
-                <div className="relative h-20 border border-dashed border-zinc-800 rounded-xl flex items-center justify-center hover:bg-zinc-800/20 transition cursor-pointer">
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-blue-600/5 rounded-2xl border border-dashed border-zinc-800 group-hover:border-blue-600/50 transition-colors" />
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={(e) => {
                     const file = e.target.files?.[0];
                     if(file) setLogoWhite(URL.createObjectURL(file));
                   }} />
-                  <span className="text-[10px] font-bold text-zinc-500">WHITE</span>
+                  <div className="h-24 flex flex-col items-center justify-center gap-2 relative pointer-events-none">
+                    <span className="text-[9px] font-black text-zinc-500 group-hover:text-white transition-colors uppercase italic">Logo White</span>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* General Config */}
-            <div className="space-y-5">
+            <div className="space-y-8 pt-4">
               <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-2 italic">Scale ({config.scale}%)</label>
-                <input type="range" min="5" max="50" value={config.scale} onChange={(e) => setConfig({...config, scale: parseInt(e.target.value)})} className="w-full accent-blue-600" />
+                <div className="flex justify-between mb-4">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Scale</label>
+                  <span className="text-[10px] font-black text-blue-500 uppercase italic">{config.scale}%</span>
+                </div>
+                <input type="range" min="5" max="50" value={config.scale} onChange={(e) => setConfig({...config, scale: parseInt(e.target.value)})} className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-blue-600" />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-2 italic">Position</label>
-                <select value={config.position} onChange={(e) => setConfig({...config, position: e.target.value})} className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-xs outline-none">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-4">Positioning</label>
+                <select value={config.position} onChange={(e) => setConfig({...config, position: e.target.value})} className="w-full bg-black border border-zinc-800 rounded-2xl p-4 text-[10px] font-black uppercase tracking-widest outline-none focus:border-blue-600 transition-colors cursor-pointer appearance-none">
                   <option value="top-left">Top Left</option>
                   <option value="top-right">Top Right</option>
                   <option value="bottom-right">Bottom Right</option>
@@ -214,30 +229,35 @@ export default function WatermarkTool() {
 
         {/* Gallery / Bulk Display */}
         <div className="lg:col-span-8">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] min-h-[600px] p-6 relative overflow-y-auto max-h-[80vh]">
+          <div className="bg-zinc-950 border border-zinc-900 rounded-[3.5rem] min-h-[650px] p-10 relative overflow-y-auto max-h-[85vh] shadow-inner">
             {images.length === 0 ? (
-              <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center">
-                <div className="w-20 h-20 bg-blue-600/10 text-blue-600 rounded-3xl flex items-center justify-center mb-4">
-                  <Upload size={32} />
+              <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center group">
+                <div className="w-24 h-24 bg-blue-600/5 text-blue-600 rounded-[2.5rem] border border-blue-600/10 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700">
+                  <Upload size={36} className="group-hover:animate-bounce" />
                 </div>
-                <p className="font-bold text-xl text-zinc-400">Drop your images here</p>
-                <p className="text-zinc-600 text-sm italic mt-1">HSC-26 Batch Bulk Processor</p>
+                <p className="font-black uppercase tracking-[0.5em] text-sm text-zinc-400 italic">Drop assets to process</p>
+                <p className="text-zinc-700 text-[9px] font-black uppercase tracking-widest mt-4">Supports PNG, JPG, WEBP</p>
                 <input type="file" multiple className="hidden" onChange={handleBulkUpload} />
               </label>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {images.map((img) => (
-                    <div key={img.id} className="relative aspect-video bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 group">
-                        <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition" />
-                        <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
-                             <span className="text-[8px] bg-black/50 px-2 py-1 rounded-md text-zinc-300 truncate max-w-[80px]">{img.name}</span>
-                             <ShieldCheck size={12} className="text-blue-500" />
+                    <div key={img.id} className="relative aspect-video bg-zinc-900 rounded-[2rem] overflow-hidden border border-zinc-800/50 group hover:border-blue-600/30 transition-all duration-500">
+                        <img src={img.url} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 group-hover:scale-110 transition duration-700" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                        <div className="absolute bottom-4 left-5 right-5 flex justify-between items-center">
+                             <span className="text-[8px] font-black uppercase tracking-widest text-zinc-400 truncate max-w-[100px] italic">{img.name}</span>
+                             <div className="p-1.5 bg-blue-600 rounded-full">
+                                <ShieldCheck size={10} className="text-white" />
+                             </div>
                         </div>
                     </div>
                 ))}
-                <label className="aspect-video border-2 border-dashed border-zinc-800 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-900 transition">
-                    <Upload size={20} className="text-zinc-600 mb-1" />
-                    <span className="text-[10px] font-bold text-zinc-600">ADD MORE</span>
+                <label className="aspect-video border-2 border-dashed border-zinc-800 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-900/50 hover:border-zinc-700 transition-all duration-500 group">
+                    <div className="p-3 bg-zinc-900 rounded-xl mb-2 group-hover:scale-110 transition-transform">
+                      <Upload size={20} className="text-zinc-500" />
+                    </div>
+                    <span className="text-[9px] font-black text-zinc-600 tracking-widest uppercase">Add More</span>
                     <input type="file" multiple className="hidden" onChange={handleBulkUpload} />
                 </label>
               </div>
