@@ -1,29 +1,25 @@
-// app/components/StudioEngine.tsx
 "use client";
 import { useState } from 'react';
 import { 
-  Upload, Download, Layers, Archive, RefreshCcw, 
-  Type, ImageIcon, Trash2, AlertCircle 
+  Upload, Download, ArrowRightLeft, 
+  Trash2, RefreshCcw, FileType, CheckCircle2 
 } from 'lucide-react';
 import JSZip from 'jszip'; 
 import heic2any from "heic2any";
 
-interface ToollyFile {
+interface ConvFile {
   id: string;
   file: File;
   preview: string;
-  status: 'idle' | 'processing' | 'done' | 'error';
+  status: 'idle' | 'processing' | 'done';
 }
 
 export default function StudioEngine() {
-  const [activeTab, setActiveTab] = useState<'watermark' | 'converter'>('watermark');
-  const [files, setFiles] = useState<ToollyFile[]>([]);
+  const [files, setFiles] = useState<ConvFile[]>([]);
   const [isBusy, setIsBusy] = useState(false);
-  const [config, setConfig] = useState({ text: 'Toolly Branded', scale: 15 });
   const [targetFormat, setTargetFormat] = useState<'png' | 'jpeg' | 'webp'>('webp');
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (typeof window === 'undefined') return;
     const uploaded = Array.from(e.target.files || []);
     setIsBusy(true);
 
@@ -64,85 +60,84 @@ export default function StudioEngine() {
           canvas.width = img.width;
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
-
-          if (activeTab === 'watermark') {
-            const fontSize = Math.floor(canvas.width * (config.scale / 300));
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.fillStyle = "white";
-            ctx.fillText(config.text, canvas.width * 0.04, canvas.height - (canvas.width * 0.04));
-          }
-          const format = activeTab === 'converter' ? `image/${targetFormat}` : 'image/png';
+          const format = `image/${targetFormat}`;
           resolve(canvas.toDataURL(format, 0.9));
         };
       });
-      zip.file(`toolly_${f.file.name.split('.')[0]}.${activeTab === 'converter' ? targetFormat : 'png'}`, result.split(',')[1], {base64: true});
+      zip.file(`converted_${f.file.name.split('.')[0]}.${targetFormat}`, result.split(',')[1], {base64: true});
     }
 
     const content = await zip.generateAsync({type: "blob"});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(content);
-    link.download = `toolly_studio_${Date.now()}.zip`;
+    link.download = `Toolly_Converted_${Date.now()}.zip`;
     link.click();
     setIsBusy(false);
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10">
+    <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center border-b border-white/5 pb-8 gap-6">
+      <div className="flex justify-between items-center mb-12 bg-zinc-900/40 p-6 rounded-[2rem] border border-white/5">
         <div className="flex items-center gap-4">
-          <div className="p-4 bg-blue-600 rounded-2xl shadow-xl shadow-blue-600/20"><Layers className="text-white" /></div>
-          <div>
-            <h1 className="text-2xl font-black italic uppercase tracking-tighter">TOOLLY <span className="text-blue-600">STUDIO</span></h1>
-            <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.4em]">HSC-26 Creative Engine</p>
+          <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/20">
+            <ArrowRightLeft className="text-white" size={24} />
           </div>
+          <h1 className="text-xl font-black uppercase tracking-tighter italic text-zinc-200">
+            Format <span className="text-indigo-500">Shift</span>
+          </h1>
         </div>
-        <div className="flex bg-zinc-900/50 p-1.5 rounded-xl border border-white/5">
-          <button onClick={() => setActiveTab('watermark')} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase transition ${activeTab === 'watermark' ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}>Watermark</button>
-          <button onClick={() => setActiveTab('converter')} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase transition ${activeTab === 'converter' ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}>Converter</button>
-        </div>
-        <button disabled={files.length === 0 || isBusy} onClick={processAndDownload} className="px-8 py-4 bg-blue-600 rounded-xl font-black uppercase text-[10px] tracking-widest disabled:opacity-20 flex items-center gap-3">
-          {isBusy ? <RefreshCcw size={16} className="animate-spin" /> : <Archive size={16} />} Export ZIP ({files.length})
+        
+        <button 
+          disabled={files.length === 0 || isBusy} 
+          onClick={processAndDownload} 
+          className="px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all disabled:opacity-20 flex items-center gap-2"
+        >
+          {isBusy ? <RefreshCcw size={14} className="animate-spin" /> : <Download size={14} />}
+          Download All (ZIP)
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 space-y-6">
-            <h2 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Settings</h2>
-            {activeTab === 'watermark' ? (
-              <div className="space-y-4">
-                <input type="text" value={config.text} onChange={(e)=>setConfig({...config, text: e.target.value})} className="w-full bg-black border border-white/5 rounded-lg p-3 text-sm" placeholder="Watermark Text" />
-                <input type="range" min="5" max="50" value={config.scale} onChange={(e)=>setConfig({...config, scale: parseInt(e.target.value)})} className="w-full accent-blue-600" />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-2">
-                {['webp', 'png', 'jpeg'].map((f) => (
-                  <button key={f} onClick={() => setTargetFormat(f as any)} className={`py-3 rounded-lg text-[10px] font-black uppercase border ${targetFormat === f ? 'border-blue-600 text-blue-500' : 'border-white/5 text-zinc-500'}`}>{f}</button>
-                ))}
-              </div>
-            )}
-            <div className="p-4 bg-blue-600/5 rounded-xl border border-blue-600/10 flex gap-3 italic text-[9px] text-zinc-500 uppercase font-bold">
-              <AlertCircle size={14} className="text-blue-500" /> HEIC/iPhone Support Active
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Settings */}
+        <div className="lg:col-span-1 space-y-4">
+          <p className="text-[9px] font-black uppercase text-zinc-500 tracking-widest ml-2">Target Format</p>
+          <div className="flex flex-col gap-2">
+            {(['webp', 'png', 'jpeg'] as const).map((fmt) => (
+              <button 
+                key={fmt} 
+                onClick={() => setTargetFormat(fmt)}
+                className={`py-4 rounded-xl text-[10px] font-black uppercase border transition-all flex justify-between px-6 items-center ${targetFormat === fmt ? 'bg-indigo-600/10 border-indigo-500 text-indigo-400' : 'bg-black border-white/5 text-zinc-500'}`}
+              >
+                {fmt === 'jpeg' ? 'JPG' : fmt}
+                {targetFormat === fmt && <CheckCircle2 size={14} />}
+              </button>
+            ))}
           </div>
+          {files.length > 0 && (
+            <button onClick={() => setFiles([])} className="w-full py-4 rounded-xl text-[10px] font-black uppercase text-red-500/60 hover:text-red-500 border border-white/5 mt-4 transition-all flex items-center justify-center gap-2">
+              <Trash2 size={14} /> Clear List
+            </button>
+          )}
         </div>
 
-        <div className="lg:col-span-8 bg-[#080808] border border-white/5 rounded-[2.5rem] p-10 min-h-[500px] relative">
+        {/* Upload/Grid Area */}
+        <div className="lg:col-span-3 bg-[#0A0A0A] border border-white/5 rounded-[2.5rem] p-8 min-h-[500px]">
           {files.length === 0 ? (
-            <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center">
-              <Upload size={32} className="text-blue-600 mb-4" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Upload Assets</p>
-              <input type="file" multiple className="hidden" onChange={handleUpload} />
+            <label className="h-full w-full flex flex-col items-center justify-center cursor-pointer border-2 border-dashed border-white/5 rounded-[2rem] hover:bg-indigo-600/[0.02] transition-all">
+              <Upload size={32} className="text-zinc-700 mb-4" />
+              <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Drop Images / Select Files</p>
+              <input type="file" multiple accept="image/*,.heic" className="hidden" onChange={handleUpload} />
             </label>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {files.map((f) => (
-                <div key={f.id} className="aspect-square rounded-2xl overflow-hidden border border-white/5 relative bg-zinc-900">
-                  <img src={f.preview} className="w-full h-full object-cover opacity-70" alt="preview" />
+                <div key={f.id} className="aspect-square bg-zinc-900/50 rounded-2xl overflow-hidden border border-white/5 relative group">
+                  <img src={f.preview} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               ))}
-              <label className="aspect-square border-2 border-dashed border-white/5 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-zinc-900">
+              <label className="aspect-square flex items-center justify-center cursor-pointer border-2 border-dashed border-white/5 rounded-2xl hover:bg-indigo-600/10">
                 <Upload size={20} className="text-zinc-600" />
                 <input type="file" multiple className="hidden" onChange={handleUpload} />
               </label>
