@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 
 // Next.js ke bola hocche eita server-e render na korte (SSR: false)
-const StudioEngine = dynamic(() => import('./components/StudioEngine'), {
+const StudioEngine = dynamic(() => import('./tools/convert/StudioEngine'), {
   ssr: false,
   loading: () => (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center">
