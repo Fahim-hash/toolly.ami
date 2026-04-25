@@ -1,233 +1,219 @@
 "use client";
 import { useState, useRef } from 'react';
 import { 
-  Upload, Download, FileType, RefreshCw, 
-  Trash2, ArrowRightLeft, Image as ImageIcon, 
-  CheckCircle2, AlertCircle 
+  Upload, Download, Settings2, ShieldCheck, 
+  Type, ImageIcon, Trash2, RefreshCcw, Layers, Archive, 
+  ArrowRightLeft, FileType, CheckCircle2, AlertCircle
 } from 'lucide-react';
+import JSZip from 'jszip'; 
+import heic2any from "heic2any";
 
-interface FileState {
+// --- Types ---
+interface ToollyFile {
   id: string;
   file: File;
   preview: string;
-  status: 'idle' | 'converting' | 'done' | 'error';
-  convertedUrl?: string;
+  status: 'idle' | 'processing' | 'done' | 'error';
+  processedUrl?: string;
 }
 
-type Format = 'png' | 'jpeg' | 'webp';
+export default function ToollyStudio() {
+  const [activeTab, setActiveTab] = useState<'watermark' | 'converter'>('watermark');
+  const [files, setFiles] = useState<ToollyFile[]>([]);
+  const [isBusy, setIsBusy] = useState(false);
+  
+  // Watermark Config
+  const [mode, setMode] = useState<'text' | 'image'>('text');
+  const [config, setConfig] = useState({
+    text: 'Toolly Branded',
+    scale: 15,
+    position: 'bottom-right',
+    opacity: 0.8,
+  });
 
-export default function FormatConverter() {
-  const [files, setFiles] = useState<FileState[]>([]);
-  const [targetFormat, setTargetFormat] = useState<Format>('webp');
-  const [isConvertingAll, setIsConvertingAll] = useState(false);
+  // Converter Config
+  const [targetFormat, setTargetFormat] = useState<'png' | 'jpeg' | 'webp'>('webp');
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --- Handlers ---
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploaded = Array.from(e.target.files || []);
-    const newFiles = uploaded.map(file => ({
-      id: Math.random().toString(36).substring(7),
-      file: file,
-      preview: URL.createObjectURL(file),
-      status: 'idle' as const
+    setIsBusy(true);
+
+    const processed = await Promise.all(uploaded.map(async (file) => {
+      let currentFile = file;
+      let previewUrl = "";
+
+      if (file.name.toLowerCase().endsWith(".heic")) {
+        try {
+          const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.8 });
+          const finalBlob = Array.isArray(blob) ? blob[0] : blob;
+          currentFile = new File([finalBlob], file.name.replace(/\.heic/i, ".jpg"), { type: "image/jpeg" });
+          previewUrl = URL.createObjectURL(finalBlob);
+        } catch (err) { console.error("HEIC Error", err); }
+      } else {
+        previewUrl = URL.createObjectURL(file);
+      }
+
+      return {
+        id: Math.random().toString(36).substring(7),
+        file: currentFile,
+        preview: previewUrl,
+        status: 'idle' as const
+      };
     }));
-    setFiles(prev => [...prev, ...newFiles]);
+
+    setFiles(prev => [...prev, ...processed]);
+    setIsBusy(false);
   };
 
-  const convertFile = async (fileState: FileState, format: Format): Promise<string> => {
-    return new Promise((resolve, reject) => {
+  const applyWatermark = async (fileObj: ToollyFile): Promise<string> => {
+    return new Promise((resolve) => {
       const img = new Image();
-      img.src = fileState.preview;
+      img.src = fileObj.preview;
       img.onload = () => {
         const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(fileObj.preview);
+
         canvas.width = img.width;
         canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject('Canvas error');
-        
         ctx.drawImage(img, 0, 0);
-        const mimeType = `image/${format}`;
-        resolve(canvas.toDataURL(mimeType, 0.9));
+
+        ctx.globalAlpha = config.opacity;
+        const pad = canvas.width * 0.04;
+
+        if (activeTab === 'watermark') {
+          const fontSize = Math.floor(canvas.width * (config.scale / 300));
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.fillStyle = "white"; // Simple auto-color logic removed for speed
+          const textWidth = ctx.measureText(config.text).width;
+          
+          let x = pad, y = canvas.height - pad;
+          if (config.position === 'center') {
+            x = (canvas.width - textWidth) / 2;
+            y = (canvas.height + fontSize) / 2;
+          }
+          ctx.fillText(config.text, x, y);
+        }
+        
+        const finalFormat = activeTab === 'converter' ? `image/${targetFormat}` : 'image/png';
+        resolve(canvas.toDataURL(finalFormat, 0.9));
       };
-      img.onerror = () => reject('Load error');
     });
   };
 
   const processAll = async () => {
-    setIsConvertingAll(true);
-    const updatedFiles = [...files];
-
-    for (let i = 0; i < updatedFiles.length; i++) {
-      if (updatedFiles[i].status === 'done') continue;
-      
-      try {
-        updatedFiles[i].status = 'converting';
-        setFiles([...updatedFiles]);
-        
-        const result = await convertFile(updatedFiles[i], targetFormat);
-        updatedFiles[i].convertedUrl = result;
-        updatedFiles[i].status = 'done';
-      } catch (err) {
-        updatedFiles[i].status = 'error';
-      }
-      setFiles([...updatedFiles]);
+    setIsBusy(true);
+    const zip = new JSZip();
+    
+    for (const f of files) {
+      const result = await applyWatermark(f);
+      const base64Data = result.replace(/^data:image\/(png|jpg|jpeg|webp);base64,/, "");
+      zip.file(`toolly_${f.file.name.split('.')[0]}.${activeTab === 'converter' ? targetFormat : 'png'}`, base64Data, {base64: true});
     }
-    setIsConvertingAll(false);
-  };
 
-  const downloadFile = (url: string, name: string) => {
+    const content = await zip.generateAsync({type: "blob"});
     const link = document.createElement('a');
-    link.href = url;
-    link.download = `${name.split('.')[0]}.${targetFormat}`;
+    link.href = URL.createObjectURL(content);
+    link.download = `toolly_batch_${Date.now()}.zip`;
     link.click();
+    setIsBusy(false);
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto py-12 px-8 min-h-screen bg-[#050505] text-zinc-100 font-sans selection:bg-blue-500/30">
-      
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row justify-between items-end mb-16 gap-8 border-b border-white/5 pb-12">
-        <div className="space-y-4">
-          <div className="flex items-center gap-4 group">
-            <div className="p-4 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-[2rem] shadow-2xl shadow-indigo-600/20 group-hover:rotate-6 transition-transform duration-500">
-              <ArrowRightLeft className="text-white" size={32} />
-            </div>
-            <div>
-              <h1 className="text-5xl font-black italic uppercase tracking-tighter leading-none">
-                Format <span className="text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]">Shift</span>
-              </h1>
-              <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.4em] mt-2 flex items-center gap-2">
-                <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse" />
-                Universal Image Transcoder
-              </p>
+    <div className="min-h-screen bg-[#050505] text-zinc-100 p-8 font-sans">
+      {/* Premium Navbar */}
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-12 border-b border-white/5 pb-8 gap-6">
+        <div className="flex items-center gap-4">
+          <div className="p-4 bg-blue-600 rounded-[1.5rem] shadow-2xl shadow-blue-600/20">
+            <Layers className="text-white" size={28} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black italic uppercase tracking-tighter">TOOLLY <span className="text-blue-600">STUDIO</span></h1>
+            <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.4em]">HSC-26 Creative Engine</p>
+          </div>
+        </div>
+
+        <div className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5">
+          <button onClick={() => {setActiveTab('watermark'); setFiles([]);}} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition ${activeTab === 'watermark' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Watermark</button>
+          <button onClick={() => {setActiveTab('converter'); setFiles([]);}} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition ${activeTab === 'converter' ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Converter</button>
+        </div>
+
+        <button 
+          disabled={files.length === 0 || isBusy}
+          onClick={processAll}
+          className="px-8 py-4 bg-blue-600 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 disabled:opacity-20 transition flex items-center gap-3"
+        >
+          {isBusy ? <RefreshCcw size={16} className="animate-spin" /> : <Archive size={16} />} 
+          Export ZIP ({files.length})
+        </button>
+      </div>
+
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Sidebar */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-zinc-900/30 border border-white/5 rounded-[2.5rem] p-8 space-y-8 backdrop-blur-xl">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 border-b border-white/5 pb-4">Configuration</h2>
+            
+            {activeTab === 'watermark' ? (
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[9px] font-black text-zinc-600 uppercase mb-3 block italic">Watermark Text</label>
+                  <input type="text" value={config.text} onChange={(e)=>setConfig({...config, text: e.target.value})} className="w-full bg-black/50 border border-white/5 rounded-xl p-4 text-sm outline-none focus:border-blue-600" />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-zinc-600 uppercase mb-3 block italic">Scale ({config.scale}%)</label>
+                  <input type="range" min="5" max="50" value={config.scale} onChange={(e)=>setConfig({...config, scale: parseInt(e.target.value)})} className="w-full accent-blue-600" />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <label className="text-[9px] font-black text-zinc-600 uppercase mb-3 block italic">Target Format</label>
+                {['webp', 'png', 'jpeg'].map((f) => (
+                  <button key={f} onClick={() => setTargetFormat(f as any)} className={`w-full py-4 rounded-xl text-[10px] font-black uppercase border transition ${targetFormat === f ? 'bg-blue-600/10 border-blue-600 text-blue-500' : 'bg-black/40 border-white/5 text-zinc-500'}`}>{f}</button>
+                ))}
+              </div>
+            )}
+            
+            <div className="p-4 bg-blue-600/5 rounded-2xl border border-blue-600/10 flex items-start gap-3">
+              <AlertCircle size={16} className="text-blue-500 mt-1" />
+              <p className="text-[9px] text-zinc-500 leading-relaxed font-bold italic uppercase">HEIC files from iPhone will be automatically converted to JPG.</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 bg-zinc-900/40 p-2 rounded-[2.5rem] border border-white/5 backdrop-blur-xl">
-          {files.length > 0 && (
-            <button onClick={() => setFiles([])} className="p-5 bg-zinc-900 text-zinc-500 rounded-[2rem] hover:text-red-500 hover:bg-red-500/10 transition-all border border-white/5">
-              <Trash2 size={22} />
-            </button>
-          )}
-          <button 
-            disabled={files.length === 0 || isConvertingAll}
-            onClick={processAll}
-            className="px-10 py-5 bg-indigo-600 text-white font-black uppercase text-xs tracking-[0.2em] rounded-[2rem] hover:bg-indigo-500 hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-indigo-600/30 disabled:opacity-20 flex items-center gap-4"
-          >
-            {isConvertingAll ? <RefreshCw size={20} className="animate-spin" /> : <FileType size={20} />} 
-            {isConvertingAll ? 'Converting...' : `Convert All (${files.length})`}
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        
-        {/* Sidebar - Settings */}
-        <div className="lg:col-span-4 space-y-8">
-          <section className="bg-[#0A0A0A] border border-white/5 rounded-[3rem] p-10 space-y-10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 blur-[80px] -mr-16 -mt-16" />
-            
-            <div className="space-y-6">
-              <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ml-2">Target Format</span>
-              <div className="grid grid-cols-1 gap-3">
-                {(['webp', 'png', 'jpeg'] as Format[]).map((fmt) => (
-                  <button 
-                    key={fmt}
-                    onClick={() => setTargetFormat(fmt)}
-                    className={`group flex items-center justify-between px-8 py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${targetFormat === fmt ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20' : 'bg-black/40 border-white/5 text-zinc-500 hover:border-zinc-700'}`}
-                  >
-                    {fmt === 'jpeg' ? 'JPG / JPEG' : fmt}
-                    {targetFormat === fmt && <CheckCircle2 size={16} />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-6 bg-indigo-600/5 border border-indigo-500/10 rounded-[2rem]">
-              <div className="flex gap-4 items-start">
-                <div className="p-2 bg-indigo-600/20 rounded-lg text-indigo-400">
-                  <AlertCircle size={18} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase text-indigo-400 italic">Pro Tip</p>
-                  <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">Use WebP for web performance or PNG for lossless transparency. SVG conversion works best for simple shapes.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        {/* Workspace */}
+        {/* Upload Area */}
         <div className="lg:col-span-8">
-          <div className="bg-[#080808] border border-white/5 rounded-[4rem] min-h-[750px] p-12 relative overflow-y-auto max-h-[85vh] shadow-inner custom-scrollbar">
+          <div className="bg-[#080808] border border-white/5 rounded-[3rem] min-h-[600px] p-10 relative">
             {files.length === 0 ? (
               <label className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center group">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-indigo-600 blur-[100px] opacity-20 group-hover:opacity-40 transition-opacity" />
-                  <div className="w-32 h-32 bg-zinc-900 border border-white/10 rounded-[3rem] flex items-center justify-center mb-10 group-hover:scale-110 transition-all duration-700 relative z-10">
-                    <Upload size={40} className="text-indigo-500" />
-                  </div>
+                <div className="w-24 h-24 bg-blue-600/10 rounded-[2rem] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-2xl">
+                  <Upload size={32} className="text-blue-600" />
                 </div>
-                <h3 className="font-black uppercase tracking-[0.6em] text-lg text-zinc-300">Drop Source Files</h3>
-                <p className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest mt-4 bg-zinc-900/50 px-6 py-2 rounded-full border border-white/5 italic">
-                  High Fidelity Conversion Engine
-                </p>
-                <input type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} />
+                <p className="text-[12px] font-black uppercase tracking-[0.4em] text-zinc-400 italic">Drop Assets Here</p>
+                <input type="file" multiple className="hidden" onChange={handleUpload} />
               </label>
             ) : (
-              <div className="space-y-4">
-                {files.map((fileState) => (
-                  <div key={fileState.id} className="group flex items-center justify-between p-6 bg-zinc-900/30 border border-white/5 rounded-3xl hover:border-indigo-600/30 transition-all duration-500">
-                    <div className="flex items-center gap-6">
-                      <div className="w-20 h-14 bg-black rounded-xl overflow-hidden border border-white/5 shadow-inner">
-                        <img src={fileState.preview} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-zinc-200 truncate max-w-[200px]">{fileState.file.name}</p>
-                        <p className="text-[9px] font-bold text-zinc-600 uppercase italic">{(fileState.file.size / 1024).toFixed(1)} KB • {fileState.file.type.split('/')[1]}</p>
-                      </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                {files.map((f) => (
+                  <div key={f.id} className="relative aspect-square rounded-[2rem] overflow-hidden border border-white/5 group">
+                    <img src={f.preview} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-4 left-5">
+                      <p className="text-[8px] font-black text-white uppercase truncate w-24">{f.file.name}</p>
                     </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="flex flex-col items-end gap-1">
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
-                          fileState.status === 'done' ? 'bg-green-500/10 border-green-500/20 text-green-500' :
-                          fileState.status === 'converting' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500 animate-pulse' :
-                          'bg-zinc-800 border-white/5 text-zinc-500'
-                        }`}>
-                          {fileState.status}
-                        </span>
-                      </div>
-
-                      {fileState.status === 'done' && fileState.convertedUrl && (
-                        <button 
-                          onClick={() => downloadFile(fileState.convertedUrl!, fileState.file.name)}
-                          className="p-4 bg-indigo-600 rounded-2xl text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20"
-                        >
-                          <Download size={18} />
-                        </button>
-                      )}
-                    </div>
+                    {isBusy && <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center"><RefreshCcw className="animate-spin text-blue-500" /></div>}
                   </div>
                 ))}
-                
-                <label className="flex items-center justify-center p-8 border-2 border-dashed border-white/5 rounded-3xl cursor-pointer hover:bg-indigo-600/[0.02] hover:border-indigo-600/20 transition-all group">
-                  <div className="flex items-center gap-4">
-                    <Upload size={20} className="text-zinc-600 group-hover:text-indigo-500" />
-                    <span className="text-[10px] font-black text-zinc-600 tracking-[0.3em] uppercase group-hover:text-zinc-400">Add More Assets</span>
-                  </div>
-                  <input type="file" multiple accept="image/*" className="hidden" onChange={handleUpload} />
+                <label className="aspect-square border-2 border-dashed border-white/5 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-900/50 transition-all">
+                  <Upload size={20} className="text-zinc-600" />
+                  <input type="file" multiple className="hidden" onChange={handleUpload} />
                 </label>
               </div>
             )}
           </div>
         </div>
       </div>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #18181b; border-radius: 10px; }
-      `}</style>
     </div>
   );
 }
