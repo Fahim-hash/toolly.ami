@@ -1,98 +1,113 @@
 "use client";
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Search, ExternalLink, Image as ImageIcon, 
-  Palette, MousePointer2, Box, 
-  Sparkles, Zap, Command
+  Search, Download, Image as ImageIcon, 
+  RefreshCcw, Sparkles, Zap, ExternalLink 
 } from 'lucide-react';
 
 const AssetEngine = () => {
   const [query, setQuery] = useState('');
-  
-  const platforms = [
-    { name: 'Unsplash', category: 'High-Res Photos', url: `https://unsplash.com/s/photos/${query}`, icon: ImageIcon, color: 'text-white', bg: 'bg-zinc-800' },
-    { name: 'FlatIcon', category: 'Vector Icons', url: `https://www.flaticon.com/search?word=${query}`, icon: Box, color: 'text-green-500', bg: 'bg-green-500/10' },
-    { name: 'Storyset', category: 'Illustrations', url: `https://storyset.com/search?q=${query}`, icon: Palette, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { name: 'Pexels', category: 'Stock Videos', url: `https://www.pexels.com/search/${query}`, icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { name: 'Dribbble', category: 'Design Inspiration', url: `https://dribbble.com/search/${query}`, icon: MousePointer2, color: 'text-pink-500', bg: 'bg-pink-500/10' },
-  ];
+  const [images, setImages] = useState<any[]>([]);
+  const [isBusy, setIsBusy] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      // Logic for multi-tab search or just focusing the UI
+  // Replace with your actual Unsplash Access Key
+  const ACCESS_KEY = "KhZkznH-Sa_ksNLnCeupL_YRBMmupKI5jS5KriF50W0"; 
+
+  const searchAssets = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!query.trim()) return;
+
+    setIsBusy(true);
+    try {
+      const res = await fetch(
+        `https://api.unsplash.com/search/photos?query=${query}&per_page=20&client_id=${ACCESS_KEY}`
+      );
+      const data = await res.json();
+      setImages(data.results || []);
+    } catch (err) {
+      console.error("Fetch Error:", err);
+    } finally {
+      setIsBusy(false);
     }
   };
 
+  const downloadImage = async (url: string, filename: string) => {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Toolly_${filename}.jpg`;
+    link.click();
+  };
+
   return (
-    <div className="max-w-6xl mx-auto py-12 px-6 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-12 bg-zinc-900/30 p-8 rounded-[2.5rem] border border-white/5 gap-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[100px]" />
-        
-        <div className="flex items-center gap-5">
-          <div className="p-4 bg-amber-500 rounded-3xl shadow-2xl shadow-amber-500/20 rotate-3">
-            <Search className="text-black" size={28} />
+    <div className="max-w-7xl mx-auto py-12 px-6 min-h-screen">
+      {/* Search Header */}
+      <div className="flex flex-col items-center mb-16 space-y-8">
+        <div className="text-center">
+          <div className="inline-flex p-4 bg-amber-500 rounded-3xl shadow-2xl shadow-amber-500/20 mb-6 rotate-3">
+            <Search className="text-black" size={32} />
           </div>
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tighter italic text-zinc-100">
-              Asset <span className="text-amber-500">Search</span>
-            </h1>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Universal Resource Finder</p>
-          </div>
+          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic">
+            Asset <span className="text-amber-500">Explorer</span>
+          </h1>
+          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.4em] mt-2">Premium Unsplash Integration</p>
         </div>
 
-        <form onSubmit={handleSearch} className="relative w-full md:w-96 group">
-          <Command size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-amber-500 transition-colors" />
+        <form onSubmit={searchAssets} className="relative w-full max-w-2xl group">
           <input 
             type="text" 
-            placeholder="Search assets (e.g. Minimalist UI)" 
+            placeholder="Search high-res assets (e.g. 'Cyberpunk City' or 'Minimal UI')" 
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-black border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm outline-none focus:border-amber-500/50 transition-all placeholder:text-zinc-700"
+            className="w-full bg-zinc-900/50 border border-white/5 rounded-[2rem] py-6 pl-8 pr-32 text-lg outline-none focus:border-amber-500/50 transition-all backdrop-blur-xl"
           />
+          <button 
+            type="submit"
+            disabled={isBusy}
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-amber-500 text-black px-8 py-3 rounded-[1.5rem] font-black uppercase text-xs tracking-widest hover:scale-105 transition-transform disabled:opacity-50"
+          >
+            {isBusy ? <RefreshCcw className="animate-spin" size={18} /> : "Search"}
+          </button>
         </form>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {platforms.map((platform, index) => (
-          <div 
-            key={platform.name}
-            className="group bg-zinc-900/20 border border-white/5 rounded-[2rem] p-8 hover:border-amber-500/30 transition-all relative overflow-hidden flex flex-col justify-between"
-          >
-            <div className="absolute -right-4 -top-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
-              <platform.icon size={120} />
-            </div>
-
-            <div className="relative z-10">
-              <div className={`w-12 h-12 ${platform.bg} ${platform.color} rounded-2xl flex items-center justify-center mb-6`}>
-                <platform.icon size={24} />
+      {/* Results Grid */}
+      {images.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {images.map((img) => (
+            <div key={img.id} className="group relative aspect-[3/4] bg-zinc-900 rounded-[2rem] overflow-hidden border border-white/5">
+              <img 
+                src={img.urls.regular} 
+                alt={img.alt_description} 
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100"
+              />
+              
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-6 flex flex-col justify-end">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] font-black text-white uppercase tracking-widest opacity-60">By {img.user.name}</p>
+                    <p className="text-[8px] font-bold text-amber-500 uppercase tracking-tighter italic">Unsplash Premium</p>
+                  </div>
+                  <button 
+                    onClick={() => downloadImage(img.urls.full, img.id)}
+                    className="p-4 bg-white text-black rounded-2xl hover:bg-amber-500 transition-colors shadow-xl"
+                  >
+                    <Download size={20} />
+                  </button>
+                </div>
               </div>
-              <h3 className="text-xl font-black uppercase tracking-tighter text-zinc-200 mb-1">{platform.name}</h3>
-              <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-8">{platform.category}</p>
             </div>
-
-            <a 
-              href={query ? platform.url : '#'} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${query ? 'bg-amber-500 text-black hover:scale-[1.02]' : 'bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50'}`}
-            >
-              Search on {platform.name} <ExternalLink size={14} />
-            </a>
-          </div>
-        ))}
-
-        {/* Pro Tip Card */}
-        <div className="lg:col-span-1 bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/5 rounded-[2rem] p-8 flex flex-col justify-center items-center text-center">
-           <Sparkles className="text-amber-500 mb-4" size={32} />
-           <h4 className="text-[11px] font-black uppercase tracking-widest text-zinc-300 mb-2 text-center">Pro Tip</h4>
-           <p className="text-[10px] text-zinc-500 font-medium leading-relaxed uppercase italic">
-             Use specific keywords like "3D Render" or "Pastel Illustration" for better results.
-           </p>
+          ))}
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-20 text-zinc-700">
+          <ImageIcon size={60} className="mb-4 opacity-20" />
+          <p className="text-xs font-black uppercase tracking-widest">No assets loaded. Try a new search.</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -102,7 +117,7 @@ const DynamicAssets = dynamic(() => Promise.resolve(AssetEngine), {
   loading: () => (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center">
       <div className="animate-pulse text-amber-500 font-black tracking-widest uppercase text-xs italic">
-        Connecting to Hub...
+        Initializing Asset Engine...
       </div>
     </div>
   ),
