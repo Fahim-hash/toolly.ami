@@ -3,8 +3,8 @@ import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { 
   Search, Download, Image as ImageIcon, 
-  RefreshCcw, Sparkles, Zap, ArrowUpRight,
-  LayoutGrid, MousePointer2
+  RefreshCcw, Zap, ArrowUpRight,
+  LayoutGrid
 } from 'lucide-react';
 
 const AssetEngine = () => {
@@ -12,7 +12,7 @@ const AssetEngine = () => {
   const [images, setImages] = useState<any[]>([]);
   const [isBusy, setIsBusy] = useState(false);
 
-  // Tomar deya Access Key eikhane add kora holo
+  // Tomar deya Unsplash Access Key
   const ACCESS_KEY = "KhZkznH-Sa_ksNLnCeupL_YRBMmupKI5jS5KriF50W0"; 
 
   const searchAssets = async (e?: React.FormEvent) => {
@@ -42,29 +42,29 @@ const AssetEngine = () => {
       link.download = `Toolly_Asset_${id}.jpg`;
       link.click();
     } catch (err) {
-      window.open(url, '_blank'); // Fallback jodi fetch block hoy
+      window.open(url, '_blank');
     }
   };
 
   return (
     <div className="max-w-[1400px] mx-auto py-12 px-6 min-h-screen">
-      {/* Dynamic Background Glow */}
+      {/* Background Glows */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-500/10 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full" />
       </div>
 
       {/* Hero Section */}
-      <div className="relative z-10 flex flex-col items-center mb-16 space-y-8">
-        <div className="text-center space-y-4">
+      <div className="relative z-10 flex flex-col items-center mb-16 space-y-8 text-center">
+        <div>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900 border border-white/5 text-amber-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
-            <Zap size={12} fill="currentColor" /> Powered by Unsplash API
+            <Zap size={12} fill="currentColor" /> Powered by Unsplash
           </div>
           <h1 className="text-5xl md:text-8xl font-black uppercase tracking-tighter italic leading-none">
             ASSET <span className="text-transparent bg-clip-text bg-gradient-to-b from-amber-400 to-amber-700">HUB</span>
           </h1>
-          <p className="text-zinc-500 text-sm md:text-base font-medium max-w-xl mx-auto">
-            Find and download the world's most beautiful imagery for your next design project, right from Toolly.
+          <p className="text-zinc-500 text-sm md:text-base font-medium max-w-xl mx-auto mt-4">
+            Find and download the world&apos;s most beautiful imagery for your projects.
           </p>
         </div>
 
@@ -77,10 +77,10 @@ const AssetEngine = () => {
             </div>
             <input 
               type="text" 
-              placeholder="Search high-res assets (e.g. Minimalist Interior, Abstract 3D)" 
+              placeholder="Search high-res assets (e.g. 3D Abstract, Minimalist Interior)" 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-transparent py-4 text-lg outline-none placeholder:text-zinc-700 font-medium"
+              className="w-full bg-transparent py-4 text-lg outline-none placeholder:text-zinc-700 font-medium text-white"
             />
             <button 
               type="submit"
@@ -93,37 +93,30 @@ const AssetEngine = () => {
         </form>
       </div>
 
-      {/* Masonry-style Grid */}
+      {/* Masonry Grid */}
       {images.length > 0 ? (
         <div className="relative z-10 columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
           {images.map((img) => (
-            <div 
-              key={img.id} 
-              className="relative break-inside-avoid rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group shadow-2xl"
-            >
+            <div key={img.id} className="relative break-inside-avoid rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group shadow-2xl">
               <img 
                 src={img.urls.regular} 
                 alt={img.alt_description} 
                 className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
               />
-              
-              {/* Premium Hover Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 p-8 flex flex-col justify-between items-start">
-                <div className="w-full flex justify-end">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 p-8 flex flex-col justify-between">
+                <div className="flex justify-end">
                   <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 text-white">
                     <ArrowUpRight size={18} />
                   </div>
                 </div>
-                
-                <div className="w-full flex justify-between items-end">
+                <div className="flex justify-between items-end">
                   <div className="space-y-1">
                     <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">Photographer</p>
-                    <p className="text-sm font-bold text-white truncate max-w-[150px]">{img.user.name}</p>
+                    <p className="text-sm font-bold text-white truncate max-w-[120px]">{img.user.name}</p>
                   </div>
-                  
                   <button 
                     onClick={() => downloadImage(img.urls.full, img.id)}
-                    className="group/btn relative flex items-center gap-2 bg-amber-500 text-black px-5 py-3 rounded-2xl font-black uppercase text-[9px] tracking-widest hover:bg-white transition-colors"
+                    className="flex items-center gap-2 bg-amber-500 text-black px-5 py-3 rounded-2xl font-black uppercase text-[9px] tracking-widest hover:bg-white transition-colors"
                   >
                     <Download size={16} /> Download
                   </button>
@@ -134,32 +127,30 @@ const AssetEngine = () => {
         </div>
       ) : (
         <div className="relative z-10 flex flex-col items-center justify-center py-40 border-2 border-dashed border-white/5 rounded-[4rem]">
-          <div className="w-24 h-24 bg-zinc-900 rounded-full flex items-center justify-center mb-6 border border-white/5 shadow-inner">
-            <LayoutGrid size={32} className="text-zinc-800" />
-          </div>
-          <p className="text-[11px] font-black uppercase tracking-[0.5em] text-zinc-600">No Assets to display</p>
+          <LayoutGrid size={32} className="text-zinc-800 mb-6" />
+          <p className="text-[11px] font-black uppercase tracking-[0.5em] text-zinc-600 italic">No Assets Found</p>
         </div>
       )}
 
       {/* Footer Branding */}
       <div className="mt-20 text-center relative z-10">
         <p className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.5em]">
-          Toolly Studio Engine v1.0 • Designed for HSC-26 Creators
+          Toolly Studio Engine v1.0 • Built for HSC-26 Creators
         </p>
       </div>
     </div>
   );
 };
 
-// SSR Prevention
+// --- Correct Dynamic Export & Loading State ---
 const DynamicAssets = dynamic(() => Promise.resolve(AssetEngine), {
   ssr: false,
   loading: () => (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center gap-6">
-      <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+      <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
       <p className="animate-pulse text-amber-500 font-black tracking-[0.4em] uppercase text-[10px] italic">
         Warming up Asset Engines...
-      </div>
+      </p>
     </div>
   ),
 });
