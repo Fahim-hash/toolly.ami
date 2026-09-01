@@ -153,7 +153,7 @@ const features = [
   {
   name: 'AI Image Vectorizer',
   desc: 'Convert raster PNG/JPG to clean SVGs instantly using browser WASM.',
-  icon: Sparkles,
+  icon:  Maximize,
   href: '/tools/vectorize',
   color: 'text-amber-400',
   bg: 'bg-amber-400/10',
