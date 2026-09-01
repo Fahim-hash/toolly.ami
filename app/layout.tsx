@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
 
             <div className="flex gap-4">
-              <Link href="https://github.com" className="text-sm text-zinc-400 hover:text-white transition self-center">
+              <Link href="https://github.com/Fahim-hash/toolly.ami" className="text-sm text-zinc-400 hover:text-white transition self-center">
                 Github
               </Link>
               <button className="bg-white text-black px-4 py-1.5 rounded-full text-sm font-bold hover:bg-zinc-200 transition">
