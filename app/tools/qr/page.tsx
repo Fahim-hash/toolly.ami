@@ -263,7 +263,7 @@ export default function QRGeneratorPage() {
     if (logo === 'facebook') return `${base}<text x="${centerX}" y="${centerY + inner * 0.31}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${inner * 0.95}" fill="${logoColor}">f</text>`;
     if (logo === 'behance') return `${base}<text x="${centerX}" y="${centerY + inner * 0.15}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${inner * 0.38}" fill="${logoColor}">Be</text>`;
     if (logo === 'x') return `${base}<text x="${centerX}" y="${centerY + inner * 0.18}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${inner * 0.66}" fill="${logoColor}">𝕏</text>`;
-    if (logo === 'website') return `${base}<text x="${centerX}" y="${centerY + inner * 0.18}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${inner * 0.62}" fill="${logoColor}">↗</text>`;
+    if (logo === 'website') return `${base}<circle cx="${centerX}" cy="${centerY}" r="${inner * 0.42}" fill="none" stroke="${logoColor}" stroke-width="${inner * 0.1}"/><path d="M ${centerX - inner * 0.12} ${centerY} H ${centerX + inner * 0.18} M ${centerX + inner * 0.02} ${centerY - inner * 0.16} L ${centerX + inner * 0.18} ${centerY} L ${centerX + inner * 0.02} ${centerY + inner * 0.16}" fill="none" stroke="${logoColor}" stroke-width="${inner * 0.1}" stroke-linecap="round" stroke-linejoin="round"/>`;
     if (logo === 'youtube') {
       return `${base}<rect x="${ix}" y="${iy + inner * 0.15}" width="${inner}" height="${inner * 0.7}" rx="${inner * 0.18}" fill="${logoColor}"/><path d="M ${centerX - inner * 0.1} ${centerY - inner * 0.16} L ${centerX - inner * 0.1} ${centerY + inner * 0.16} L ${centerX + inner * 0.18} ${centerY} Z" fill="${logoBg}"/>`;
     }
