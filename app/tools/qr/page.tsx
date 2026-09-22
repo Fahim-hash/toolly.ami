@@ -136,6 +136,22 @@ export default function QRGeneratorPage() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('f', centerX, centerY + inner * 0.08);
+    } else if (logo === 'website') {
+      ctx.strokeStyle = logoColor;
+      ctx.lineWidth = Math.max(2, inner * 0.09);
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, inner * 0.43, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, inner * 0.18, inner * 0.43, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(centerX - inner * 0.43, centerY);
+      ctx.lineTo(centerX + inner * 0.43, centerY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, inner * 0.43, inner * 0.18, 0, 0, Math.PI * 2);
+      ctx.stroke();
     } else if (logo === 'instagram') {
       ctx.lineWidth = Math.max(2, inner * 0.11);
       ctx.strokeStyle = logoColor;
@@ -263,7 +279,7 @@ export default function QRGeneratorPage() {
     if (logo === 'facebook') return `${base}<text x="${centerX}" y="${centerY + inner * 0.31}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${inner * 0.95}" fill="${logoColor}">f</text>`;
     if (logo === 'behance') return `${base}<text x="${centerX}" y="${centerY + inner * 0.15}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${inner * 0.38}" fill="${logoColor}">Be</text>`;
     if (logo === 'x') return `${base}<text x="${centerX}" y="${centerY + inner * 0.18}" text-anchor="middle" font-family="Arial" font-weight="900" font-size="${inner * 0.66}" fill="${logoColor}">𝕏</text>`;
-    if (logo === 'website') return `${base}<circle cx="${centerX}" cy="${centerY}" r="${inner * 0.42}" fill="none" stroke="${logoColor}" stroke-width="${inner * 0.1}"/><path d="M ${centerX - inner * 0.12} ${centerY} H ${centerX + inner * 0.18} M ${centerX + inner * 0.02} ${centerY - inner * 0.16} L ${centerX + inner * 0.18} ${centerY} L ${centerX + inner * 0.02} ${centerY + inner * 0.16}" fill="none" stroke="${logoColor}" stroke-width="${inner * 0.1}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (logo === 'website') return `${base}<circle cx="${centerX}" cy="${centerY}" r="${inner * 0.42}" fill="none" stroke="${logoColor}" stroke-width="${inner * 0.09}"/><ellipse cx="${centerX}" cy="${centerY}" rx="${inner * 0.18}" ry="${inner * 0.42}" fill="none" stroke="${logoColor}" stroke-width="${inner * 0.09}"/><line x1="${centerX - inner * 0.42}" y1="${centerY}" x2="${centerX + inner * 0.42}" y2="${centerY}" stroke="${logoColor}" stroke-width="${inner * 0.09}"/><ellipse cx="${centerX}" cy="${centerY}" rx="${inner * 0.42}" ry="${inner * 0.18}" fill="none" stroke="${logoColor}" stroke-width="${inner * 0.09}"/>`;
     if (logo === 'youtube') {
       return `${base}<rect x="${ix}" y="${iy + inner * 0.15}" width="${inner}" height="${inner * 0.7}" rx="${inner * 0.18}" fill="${logoColor}"/><path d="M ${centerX - inner * 0.1} ${centerY - inner * 0.16} L ${centerX - inner * 0.1} ${centerY + inner * 0.16} L ${centerX + inner * 0.18} ${centerY} Z" fill="${logoBg}"/>`;
     }
@@ -430,7 +446,13 @@ export default function QRGeneratorPage() {
       } else if (logo === 'x') {
         lines.push(`/Helvetica-Bold findfont ${(boxSize * 0.55).toFixed(2)} scalefont setfont ${(centerX - boxSize * 0.25).toFixed(2)} ${(centerY - boxSize * 0.18).toFixed(2)} moveto (X) show`);
       } else if (logo === 'website') {
-        lines.push(`/Helvetica-Bold findfont ${(boxSize * 0.52).toFixed(2)} scalefont setfont ${(centerX - boxSize * 0.18).toFixed(2)} ${(centerY - boxSize * 0.18).toFixed(2)} moveto (>) show`);
+        const globeR = boxSize * 0.28;
+        lines.push(
+          `newpath ${centerX.toFixed(4)} ${centerY.toFixed(4)} ${globeR.toFixed(4)} 0 360 arc stroke`,
+          `newpath ${centerX.toFixed(4)} ${centerY.toFixed(4)} ${(boxSize * 0.12).toFixed(4)} 0 360 arc stroke`,
+          `newpath ${(centerX - globeR).toFixed(4)} ${centerY.toFixed(4)} moveto ${(centerX + globeR).toFixed(4)} ${centerY.toFixed(4)} lineto stroke`,
+          `newpath ${(centerX - globeR).toFixed(4)} ${centerY.toFixed(4)} ${globeR.toFixed(4)} 180 360 arc stroke`,
+        );
       } else if (logo === 'youtube') {
         lines.push(rect(centerX - boxSize * 0.33, centerY - boxSize * 0.22, boxSize * 0.66, boxSize * 0.44, boxSize * 0.1), rgb(logoBg));
         lines.push(`newpath ${(centerX - boxSize * 0.07).toFixed(4)} ${(centerY - boxSize * 0.11).toFixed(4)} moveto ${(centerX - boxSize * 0.07).toFixed(4)} ${(centerY + boxSize * 0.11).toFixed(4)} lineto ${(centerX + boxSize * 0.14).toFixed(4)} ${centerY.toFixed(4)} lineto closepath fill`);
