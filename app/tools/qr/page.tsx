@@ -181,6 +181,45 @@ export default function QRGeneratorPage() {
     }
   };
 
+  const selectLogo = (nextLogo: LogoPreset) => {
+    setLogo(nextLogo);
+
+    if (nextLogo === 'behance') {
+      setModuleStyle('rounded');
+      setEyeStyle('rounded');
+      setLogoColor('#ffffff');
+      setLogoBg('#1769ff');
+    } else if (nextLogo === 'facebook') {
+      setModuleStyle('rounded');
+      setEyeStyle('rounded');
+      setLogoColor('#ffffff');
+      setLogoBg('#1877f2');
+    } else if (nextLogo === 'instagram') {
+      setModuleStyle('rounded');
+      setEyeStyle('rounded');
+      setLogoColor('#ffffff');
+      setLogoBg('#d62976');
+    } else if (nextLogo === 'youtube') {
+      setModuleStyle('rounded');
+      setEyeStyle('rounded');
+      setLogoColor('#ffffff');
+      setLogoBg('#ff0000');
+    } else if (nextLogo === 'x') {
+      setModuleStyle('rounded');
+      setEyeStyle('rounded');
+      setLogoColor('#ffffff');
+      setLogoBg('#000000');
+    } else if (nextLogo === 'website') {
+      setModuleStyle('rounded');
+      setEyeStyle('rounded');
+      setLogoColor('#ffffff');
+      setLogoBg('#111111');
+    } else {
+      setLogoColor('#09090b');
+      setLogoBg('#ffffff');
+    }
+  };
+
   const renderCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -558,7 +597,7 @@ export default function QRGeneratorPage() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {LOGO_PRESETS.map((item) => (
-                <button key={item.id} onClick={() => setLogo(item.id)} className={`px-3 py-3 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-colors ${logo === item.id ? 'bg-white text-black border-white' : 'border-white/10 text-zinc-400 hover:bg-white/5'}`}>
+                <button key={item.id} onClick={() => selectLogo(item.id)} className={`px-3 py-3 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-colors ${logo === item.id ? 'bg-white text-black border-white' : 'border-white/10 text-zinc-400 hover:bg-white/5'}`}>
                   {item.label}
                 </button>
               ))}
