@@ -7,13 +7,10 @@ import {
   Copy,
   Download,
   FileCode2,
-  Globe,
-  Instagram,
   Link2,
   RotateCcw,
   QrCode,
   Sparkles,
-  Youtube,
 } from 'lucide-react';
 
 type LogoPreset = 'none' | 'facebook' | 'instagram' | 'youtube' | 'behance' | 'x' | 'website';
