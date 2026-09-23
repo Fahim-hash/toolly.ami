@@ -12,6 +12,7 @@ import {
   Trash2,
   Upload,
   X,
+  Server,
 } from "lucide-react";
 
 type PdfFile = {
@@ -32,9 +33,11 @@ type RenderedDocument = {
 };
 
 const MAX_RENDER_SIDE = 2400;
+const LARGE_FILE_THRESHOLD = 750 * 1024 * 1024;
 const A4_WIDTH = 595;
 const A4_HEIGHT = 842;
 const PAGE_MARGIN = 36;
+const WORKER_URL = process.env.NEXT_PUBLIC_PSD_WORKER_URL?.replace(/\/$/, "");
 
 const formatBytes = (bytes: number) => {
   if (!bytes) return "0 B";
@@ -122,18 +125,17 @@ function buildPdf(images: Array<{ jpeg: Uint8Array; width: number; height: numbe
     byteLength += bytes.length;
   };
 
-  push("%PDF-1.4\n%\xFF\xFF\xFF\xFF\n");
+  push("%PDF-1.4\\n%\\xFF\\xFF\\xFF\\xFF\\n");
 
   const pageObjects = images.map((_, index) => 3 + index * 3);
   const objectCount = 2 + images.length * 3;
 
   const addObject = (id: number, value: string) => {
     offsets[id] = byteLength;
-    push(`${id} 0 obj\n${value}\nendobj\n`);
+    push(`${id} 0 obj\\n${value}\\nendobj\\n`);
   };
 
   addObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
-
   const kids = pageObjects.map((id) => `${id} 0 R`).join(" ");
   addObject(2, `<< /Type /Pages /Kids [${kids}] /Count ${images.length} >>`);
 
@@ -151,7 +153,7 @@ function buildPdf(images: Array<{ jpeg: Uint8Array; width: number; height: numbe
       "Q",
       "Q",
       "",
-    ].join("\n");
+    ].join("\\n");
 
     addObject(
       pageId,
@@ -160,26 +162,26 @@ function buildPdf(images: Array<{ jpeg: Uint8Array; width: number; height: numbe
 
     addObject(
       contentId,
-      `<< /Length ${encoder.encode(content).length} >>\nstream\n${content}endstream`,
+      `<< /Length ${encoder.encode(content).length} >>\\nstream\\n${content}endstream`,
     );
 
     offsets[imageId] = byteLength;
-    push(`${imageId} 0 obj\n`);
+    push(`${imageId} 0 obj\\n`);
     push(
-      `<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.jpeg.length} >>\nstream\n`,
+      `<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.jpeg.length} >>\\nstream\\n`,
     );
     push(image.jpeg);
-    push("\nendstream\nendobj\n");
+    push("\\nendstream\\nendobj\\n");
   });
 
   const xrefOffset = byteLength;
-  push(`xref\n0 ${objectCount + 1}\n`);
-  push("0000000000 65535 f \n");
+  push(`xref\\n0 ${objectCount + 1}\\n`);
+  push("0000000000 65535 f \\n");
   for (let id = 1; id <= objectCount; id += 1) {
-    push(`${String(offsets[id]).padStart(10, "0")} 00000 n \n`);
+    push(`${String(offsets[id]).padStart(10, "0")} 00000 n \\n`);
   }
   push(
-    `trailer\n<< /Size ${objectCount + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`,
+    `trailer\\n<< /Size ${objectCount + 1} /Root 1 0 R >>\\nstartxref\\n${xrefOffset}\\n%%EOF`,
   );
 
   const result = new Uint8Array(byteLength);
@@ -191,6 +193,40 @@ function buildPdf(images: Array<{ jpeg: Uint8Array; width: number; height: numbe
   return new Blob([result], { type: "application/pdf" });
 }
 
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function convertWithWorker(file: File) {
+  if (!WORKER_URL) {
+    throw new Error(
+      "Large-file conversion is not configured yet. Set NEXT_PUBLIC_PSD_WORKER_URL to your PSD worker URL.",
+    );
+  }
+
+  const response = await fetch(`${WORKER_URL}/convert`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/octet-stream",
+      "X-Filename": encodeURIComponent(file.name),
+    },
+    body: file,
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(detail || `Large-file conversion failed (HTTP ${response.status}).`);
+  }
+
+  const blob = await response.blob();
+  return blob;
+}
+
 export default function PsdToPdfPage() {
   const [files, setFiles] = useState<PdfFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -198,7 +234,7 @@ export default function PsdToPdfPage() {
   const [message, setMessage] = useState("");
 
   const addFiles = useCallback(async (selected: FileList | File[]) => {
-    const candidates = Array.from(selected).filter((file) => /\.(psd|psb)$/i.test(file.name));
+    const candidates = Array.from(selected).filter((file) => /\\.(psd|psb)$/i.test(file.name));
     if (!candidates.length) {
       setMessage("Please select PSD or PSB files.");
       return;
@@ -211,6 +247,21 @@ export default function PsdToPdfPage() {
     for (let index = 0; index < candidates.length; index += 1) {
       const file = candidates[index];
       setProgress(Math.round((index / candidates.length) * 100));
+
+      if (file.size >= LARGE_FILE_THRESHOLD) {
+        created.push({
+          id: `${file.name}-${file.lastModified}-${index}`,
+          file,
+          preview: null,
+          width: 0,
+          height: 0,
+          status: WORKER_URL ? "ready" : "error",
+          error: WORKER_URL
+            ? "Large PSB/PSD: will be processed by the dedicated worker when you export."
+            : "This file is too large for browser-only processing. Configure the large-file worker first.",
+        });
+        continue;
+      }
 
       try {
         const rendered = await renderPsd(file);
@@ -245,9 +296,24 @@ export default function PsdToPdfPage() {
     if (!ready.length) return;
 
     setIsProcessing(true);
-    setMessage("Building your PDF locally…");
+    setMessage("");
 
     try {
+      if (ready.some((item) => item.file.size >= LARGE_FILE_THRESHOLD)) {
+        if (ready.length !== 1) {
+          throw new Error("Large-file mode currently converts one PSB/PSD at a time.");
+        }
+
+        setMessage(`Uploading ${formatBytes(ready[0].file.size)} to the large-file worker. Keep this tab open while it processes.`);
+        setProgress(5);
+        const pdf = await convertWithWorker(ready[0].file);
+        setProgress(100);
+        triggerDownload(pdf, ready[0].file.name.replace(/\\.(psd|psb)$/i, ".pdf"));
+        setMessage("Large PSB/PSD converted successfully.");
+        return;
+      }
+
+      setMessage("Building your PDF locally…");
       const images = [];
       for (let index = 0; index < ready.length; index += 1) {
         const rendered = await renderPsd(ready[index].file);
@@ -260,15 +326,12 @@ export default function PsdToPdfPage() {
       }
 
       const pdf = buildPdf(images);
-      const url = URL.createObjectURL(pdf);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download =
+      triggerDownload(
+        pdf,
         ready.length === 1
-          ? ready[0].file.name.replace(/\.(psd|psb)$/i, ".pdf")
-          : `Toolly_PSD_Collection_${Date.now()}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
+          ? ready[0].file.name.replace(/\\.(psd|psb)$/i, ".pdf")
+          : `Toolly_PSD_Collection_${Date.now()}.pdf`,
+      );
       setMessage(`${ready.length} ${ready.length === 1 ? "document" : "documents"} exported successfully.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "PDF export failed.");
@@ -287,13 +350,13 @@ export default function PsdToPdfPage() {
         <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.25em] text-blue-400">
-              <FileText size={13} /> New Tool
+              <FileText size={13} /> PSD / PSB CONVERTER
             </div>
             <h1 className="text-5xl font-black uppercase italic tracking-tighter md:text-7xl">
               PSD<span className="text-blue-500"> → PDF</span>
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500">
-              Convert Adobe Photoshop PSD and large PSB documents into shareable PDF files directly in your browser.
+              Convert Photoshop PSD and PSB documents into shareable PDF files. Small files stay local; very large files use the dedicated disk-based worker.
             </p>
           </div>
 
@@ -338,7 +401,7 @@ export default function PsdToPdfPage() {
             {isProcessing && (
               <div className="mt-6 rounded-2xl border border-blue-500/10 bg-blue-500/5 p-4">
                 <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-widest">
-                  <span className="text-blue-400">Processing locally</span>
+                  <span className="text-blue-400">Processing</span>
                   <span className="text-zinc-500">{progress}%</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-zinc-900">
@@ -362,9 +425,9 @@ export default function PsdToPdfPage() {
                       <p className="truncate text-sm font-bold text-zinc-200">{item.file.name}</p>
                       <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-zinc-600">
                         {formatBytes(item.file.size)}
-                        {item.status === "ready" ? ` • ${item.width} × ${item.height}px` : ""}
+                        {item.status === "ready" && item.width > 0 ? ` • ${item.width} × ${item.height}px` : ""}
                       </p>
-                      {item.error && <p className="mt-1 text-xs text-red-400">{item.error}</p>}
+                      {item.error && <p className="mt-1 text-xs text-zinc-500">{item.error}</p>}
                     </div>
                     <button
                       onClick={() => removeFile(item.id)}
@@ -401,21 +464,25 @@ export default function PsdToPdfPage() {
 
           <aside className="space-y-4">
             <div className="rounded-[2rem] border border-blue-500/10 bg-blue-500/5 p-6">
-              <ShieldCheck className="mb-4 text-blue-400" size={25} />
-              <h3 className="text-sm font-black uppercase tracking-widest">100% Local</h3>
+              {WORKER_URL ? <Server className="mb-4 text-blue-400" size={25} /> : <ShieldCheck className="mb-4 text-blue-400" size={25} />}
+              <h3 className="text-sm font-black uppercase tracking-widest">
+                {WORKER_URL ? "Large-file mode ready" : "Local processing"}
+              </h3>
               <p className="mt-2 text-xs leading-5 text-zinc-500">
-                PSD/PSB files are parsed and flattened in your browser. Nothing is uploaded to a conversion server.
+                {WORKER_URL
+                  ? "Large PSB/PSD files are uploaded directly to the dedicated converter worker and processed from disk instead of browser RAM."
+                  : "Smaller PSD/PSB files are parsed and flattened in your browser. Configure the worker URL to enable the 4 GB large-file path."}
               </p>
             </div>
 
             <div className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6">
-              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-300">Good to know</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-300">Large PSB mode</h3>
               <ul className="mt-4 space-y-3 text-xs leading-5 text-zinc-500">
-                <li>• PSD and PSB are supported.</li>
-                <li>• Multiple files become one PDF with one page per document.</li>
-                <li>• The PDF contains a flattened composite, not editable Photoshop layers.</li>
-                <li>• Very large documents can use significant browser memory.</li>
-                <li>• Transparent areas are rendered onto a white PDF page.</li>
+                <li>• Designed for multi-GB PSB/PSD uploads.</li>
+                <li>• Your 2550 × 3300 px / ~4 GB files are handled outside browser memory.</li>
+                <li>• Conversion produces a flattened PDF, not editable Photoshop layers.</li>
+                <li>• The worker needs enough disk space for the source PSB plus temporary/output files.</li>
+                <li>• One large file is converted at a time.</li>
               </ul>
             </div>
           </aside>
