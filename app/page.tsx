@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { Type, Maximize, Scissors, Palette, Layers, Zap, ArrowRight, Eraser, FileCode, Wand2, Hash, Image as ImageIcon, Scaling, Move, Search, Contrast, Code, QrCode } from 'lucide-react';
+import { FileText, Type, Maximize, Scissors, Palette, Layers, Zap, ArrowRight, Eraser, FileCode, Wand2, Hash, Image as ImageIcon, Scaling, Move, Search, Contrast, Code, QrCode } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const features = [
@@ -21,7 +21,7 @@ const features = [
   { name: 'Grain Texture', desc: 'Add noise and analog grain textures to your art.', icon: Zap, href: '/tools/grain', color: 'text-zinc-400', bg: 'bg-zinc-400/10' },
   { name: 'Icon Packager', desc: 'Bundle and export icons for developer handoff.', icon: Code, href: '/tools/package', color: 'text-green-500', bg: 'bg-green-500/10' },
   { name: 'AI Image Vectorizer', desc: 'Convert raster PNG/JPG to clean SVGs instantly using browser WASM.', icon: Maximize, href: '/tools/vectorize', color: 'text-amber-400', bg: 'bg-amber-400/10' },
-  { name: 'QR Generator', desc: 'Create customizable, high-resolution QR codes locally in your browser.', icon: QrCode, href: '/tools/qr', color: 'text-white', bg: 'bg-white/10' },
+  { name: 'PSD to PDF', desc: 'Convert PSD and PSB Photoshop files to shareable PDF pages locally.', icon: FileText, href: '/tools/psd-to-pdf', color: 'text-blue-500', bg: 'bg-blue-500/10' },\n  { name: 'QR Generator', desc: 'Create customizable, high-resolution QR codes locally in your browser.', icon: QrCode, href: '/tools/qr', color: 'text-white', bg: 'bg-white/10' },
 ];
 
 export default function HomePage() {
@@ -31,7 +31,7 @@ export default function HomePage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <span className="px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm font-medium inline-block mb-6">Toolly: All-in-One Designer Toolkit ⚡</span>
           <h1 className="text-5xl md:text-7xl font-extrabold mb-6 bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent tracking-tight leading-[1.1]">Design Faster, <br /> Work Smarter.</h1>
-          <p className="text-zinc-400 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">A specialized suite of 18 tools built for creative designers. Process images, manage assets, and boost your workflow instantly without any server upload.</p>
+          <p className="text-zinc-400 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">A specialized suite of 19 tools built for creative designers. Process images, manage assets, and boost your workflow instantly without any server upload.</p>
         </motion.div>
       </section>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-20">
