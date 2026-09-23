@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM node:22-bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
@@ -6,7 +6,9 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY policy.xml /etc/ImageMagick-7/policy.xml
+COPY policy.xml /tmp/toolly-policy.xml
+RUN set -eux; target="$(find /etc -path '*/ImageMagick-*/policy.xml' -print -quit)"; test -n "$target"; cp /tmp/toolly-policy.xml "$target"
+
 COPY server.mjs .
 
 ENV PORT=8080
