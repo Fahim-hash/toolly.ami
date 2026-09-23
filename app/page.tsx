@@ -21,7 +21,8 @@ const features = [
   { name: 'Grain Texture', desc: 'Add noise and analog grain textures to your art.', icon: Zap, href: '/tools/grain', color: 'text-zinc-400', bg: 'bg-zinc-400/10' },
   { name: 'Icon Packager', desc: 'Bundle and export icons for developer handoff.', icon: Code, href: '/tools/package', color: 'text-green-500', bg: 'bg-green-500/10' },
   { name: 'AI Image Vectorizer', desc: 'Convert raster PNG/JPG to clean SVGs instantly using browser WASM.', icon: Maximize, href: '/tools/vectorize', color: 'text-amber-400', bg: 'bg-amber-400/10' },
-  { name: 'PSD to PDF', desc: 'Convert PSD and PSB Photoshop files to shareable PDF pages locally.', icon: FileText, href: '/tools/psd-to-pdf', color: 'text-blue-500', bg: 'bg-blue-500/10' },\n  { name: 'QR Generator', desc: 'Create customizable, high-resolution QR codes locally in your browser.', icon: QrCode, href: '/tools/qr', color: 'text-white', bg: 'bg-white/10' },
+  { name: 'PSD to PDF', desc: 'Convert PSD and PSB Photoshop files to shareable PDF pages locally.', icon: FileText, href: '/tools/psd-to-pdf', color: 'text-blue-500', bg: 'bg-blue-500/10' },
+  { name: 'QR Generator', desc: 'Create customizable, high-resolution QR codes locally in your browser.', icon: QrCode, href: '/tools/qr', color: 'text-white', bg: 'bg-white/10' },
 ];
 
 export default function HomePage() {
