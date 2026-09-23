@@ -47,7 +47,7 @@ export default function HomePage() {
         ))}
       </div>
       <div className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-blue-900/20 border border-zinc-800 rounded-[2.5rem] p-10 flex flex-col md:flex-row items-center justify-between gap-8">
-        <div className="text-center md:text-left"><h2 className="text-3xl font-bold mb-2 tracking-tight">Privacy First Processing</h2><p className="text-zinc-400 max-w-md">Your creative assets never touch our servers. Everything happens 100% locally in your browser.</p></div>
+        <div className="text-center md:text-left"><h2 className="text-3xl font-bold mb-2 tracking-tight">Privacy First Processing</h2><p className="text-zinc-400 max-w-md">Most tools process files locally in your browser. The large PSB/PSD converter uses a dedicated worker only when multi-GB processing is required.</p></div>
         <Link href="/tools/qr" className="whitespace-nowrap px-8 py-4 bg-white text-black font-bold rounded-2xl hover:scale-105 transition-transform flex items-center gap-2"><QrCode size={20} /> Try QR Generator</Link>
       </div>
     </div>
