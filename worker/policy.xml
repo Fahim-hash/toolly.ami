@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policymap>
+  <policy domain="resource" name="memory" value="12GiB"/>
+  <policy domain="resource" name="map" value="24GiB"/>
+  <policy domain="resource" name="disk" value="40GiB"/>
+  <policy domain="resource" name="width" value="50000"/>
+  <policy domain="resource" name="height" value="50000"/>
+  <policy domain="coder" rights="read|write" pattern="PDF"/>
+  <policy domain="coder" rights="read" pattern="PSB"/>
+  <policy domain="coder" rights="read" pattern="PSD"/>
+</policymap>
