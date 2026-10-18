@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Download, RefreshCw, Sparkles, SlidersHorizontal } from 'lucide-react';
 
 export default function GrainTexturePage() {
@@ -28,6 +28,8 @@ export default function GrainTexturePage() {
     }
     ctx.putImageData(image, 0, 0);
   };
+
+  useEffect(() => { generate(); }, [amount, size, contrast, seed]);
 
   const save = () => {
     const canvas = canvasRef.current;
