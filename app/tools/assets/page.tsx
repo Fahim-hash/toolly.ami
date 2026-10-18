@@ -47,31 +47,24 @@ const AssetEngine = () => {
 
   return (
     <div className="max-w-[1400px] mx-auto py-12 px-6 min-h-screen">
-      {/* Background Glows */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full" />
-      </div>
-
       {/* Hero Section */}
-      <div className="relative z-10 flex flex-col items-center mb-16 space-y-8 text-center">
+      <div className="relative z-10 mb-10 flex flex-col items-start space-y-5 text-left">
         <div>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900 border border-white/5 text-amber-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-400">
             <Zap size={12} fill="currentColor" /> Powered by Unsplash
           </div>
-          <h1 className="text-5xl md:text-8xl font-black uppercase tracking-tighter italic leading-none">
-            ASSET <span className="text-transparent bg-clip-text bg-gradient-to-b from-amber-400 to-amber-700">HUB</span>
+          <h1 className="text-4xl font-semibold tracking-tight leading-tight sm:text-5xl">
+            ASSET <span className="text-zinc-500">HUB</span>
           </h1>
-          <p className="text-zinc-500 text-sm md:text-base font-medium max-w-xl mx-auto mt-4">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400 sm:text-base">
             Find and download the world&apos;s most beautiful imagery for your projects.
           </p>
         </div>
 
         {/* Search Bar */}
-        <form onSubmit={searchAssets} className="relative w-full max-w-3xl group">
-          <div className="absolute inset-0 bg-amber-500/20 blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-          <div className="relative flex items-center bg-zinc-900/80 border border-white/10 rounded-[2.5rem] p-2 backdrop-blur-3xl focus-within:border-amber-500/50 transition-all">
-            <div className="pl-6 pr-4 text-zinc-500">
+        <form onSubmit={searchAssets} className="relative w-full max-w-2xl">
+          <div className="relative flex items-center rounded-xl border border-white/10 bg-white/[.025] p-1 transition focus-within:border-violet-400/60">
+            <div className="pl-3 pr-2 text-zinc-500">
               <Search size={24} />
             </div>
             <input 
@@ -79,12 +72,12 @@ const AssetEngine = () => {
               placeholder="Search high-res assets (e.g. 3D Abstract, Minimalist Interior)" 
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full bg-transparent py-4 text-lg outline-none placeholder:text-zinc-700 font-medium text-white"
+              className="w-full bg-transparent py-3 text-sm text-white outline-none placeholder:text-zinc-600"
             />
             <button 
               type="submit"
               disabled={isBusy}
-              className="bg-amber-500 hover:bg-amber-400 text-black px-10 py-4 rounded-[2rem] font-black uppercase text-[10px] tracking-widest transition-all active:scale-95 disabled:opacity-50"
+              className="rounded-lg bg-white px-4 py-3 text-sm font-medium text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
             >
               {isBusy ? <RefreshCcw className="animate-spin" size={18} /> : "Search"}
             </button>
@@ -96,13 +89,13 @@ const AssetEngine = () => {
 
       {/* Masonry Grid */}
       {images.length > 0 ? (
-        <div className="relative z-10 columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+        <div className="relative z-10 columns-1 gap-4 space-y-4 sm:columns-2 lg:columns-3 xl:columns-4">
           {images.map((img) => (
-            <div key={img.id} className="relative break-inside-avoid rounded-3xl overflow-hidden bg-zinc-900 border border-white/5 group shadow-2xl">
+            <div key={img.id} className="group relative mb-4 break-inside-avoid overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
               <img 
                 src={img.urls.regular} 
                 alt={img.alt_description} 
-                className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
+                className="h-auto w-full object-cover opacity-90 transition-opacity group-hover:opacity-100"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 p-8 flex flex-col justify-between">
                 <div className="flex justify-end">
