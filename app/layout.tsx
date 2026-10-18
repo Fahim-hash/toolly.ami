@@ -1,7 +1,7 @@
 import './globals.css';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Github, Sparkles } from 'lucide-react';
+import { Code } from 'lucide-react';
 
 export const metadata = {
   title: { default: 'Toolly — Creative Tools for Everyday Work', template: '%s | Toolly' },
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <div className="flex items-center gap-2 sm:gap-3">
               <Link href="/#tools" className="rounded-lg px-3 py-2 text-sm text-zinc-400 transition hover:bg-white/5 hover:text-white">Explore tools</Link>
-              <a href="https://github.com/Fahim-hash/toolly.ami" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-sm font-semibold text-zinc-200 transition hover:border-white/20 hover:bg-white/[.08]"><Github size={16} /><span className="hidden sm:inline">GitHub</span></a>
+              <a href="https://github.com/Fahim-hash/toolly.ami" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-sm font-semibold text-zinc-200 transition hover:border-white/20 hover:bg-white/[.08]"><Code size={16} /><span className="hidden sm:inline">GitHub</span></a>
             </div>
           </div>
         </nav>
