@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import {
   ArrowUpRight, Search, Image as ImageIcon, Palette, Type, Code2,
   Eraser, FileCode2, Maximize2, Layers2, QrCode, Sparkles, ShieldCheck,
-  FileText, Scan, Move, Scaling, Contrast, Zap, WandSparkles
+  FileText, Scan, Move, Scaling, Contrast, WandSparkles, LayoutGrid
 } from "lucide-react";
 
 const tools = [
@@ -29,6 +29,7 @@ const tools = [
   { name: "PSD to PDF", description: "Prepare Photoshop files for sharing.", category: "Design", href: "/tools/psd-to-pdf", icon: FileText },
   { name: "QR Generator", description: "Create customizable QR codes locally.", category: "Utilities", href: "/tools/qr", icon: QrCode },
   { name: "Pattern Maker", description: "Create repeatable patterns and export them.", category: "Design", href: "/tools/pattern-maker", icon: WandSparkles },
+  { name: "Social Canvas", description: "Prepare artwork for social media formats.", category: "Design", href: "/tools/social-canvas", icon: LayoutGrid },
 ];
 
 const categories = ["All tools", "Image", "Design", "Developer", "Assets", "Utilities"];
