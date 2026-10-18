@@ -20,7 +20,6 @@ export default function GrainTexturePage() {
     const random = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296; };
     for (let i = 0; i < image.data.length; i += 4) {
       const noise = (random() - .5) * contrast * 2;
-      const alpha = Math.max(0, Math.min(255, 128 + noise));
       image.data[i] = 128; image.data[i + 1] = 128; image.data[i + 2] = 128;
       image.data[i + 3] = Math.round(Math.max(0, Math.min(255, Math.abs(noise) * amount / 100)));
       if (random() > .5) { image.data[i] = 255; image.data[i+1] = 255; image.data[i+2] = 255; }
