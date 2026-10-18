@@ -11,23 +11,22 @@ const AssetEngine = () => {
   const [query, setQuery] = useState('');
   const [images, setImages] = useState<any[]>([]);
   const [isBusy, setIsBusy] = useState(false);
-
-  // Tomar deya Unsplash Access Key
-  const ACCESS_KEY = "KhZkznH-Sa_ksNLnCeupL_YRBMmupKI5jS5KriF50W0"; 
+  const [error, setError] = useState('');
 
   const searchAssets = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!query.trim()) return;
 
     setIsBusy(true);
+    setError("");
     try {
-      const res = await fetch(
-        `https://api.unsplash.com/search/photos?query=${query}&per_page=24&client_id=${ACCESS_KEY}`
-      );
+      const res = await fetch(`/api/assets/search?q=${encodeURIComponent(query.trim())}`);
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not search assets.");
       setImages(data.results || []);
     } catch (err) {
-      console.error("Fetch Error:", err);
+      setError(err instanceof Error ? err.message : "Could not search assets. Please try again.");
+      setImages([]);
     } finally {
       setIsBusy(false);
     }
@@ -92,6 +91,8 @@ const AssetEngine = () => {
           </div>
         </form>
       </div>
+
+      {error && <div role="alert" className="relative z-10 mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">{error}</div>}
 
       {/* Masonry Grid */}
       {images.length > 0 ? (
